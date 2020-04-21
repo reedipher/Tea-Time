@@ -1,0 +1,5 @@
+{
+    "python.pythonPath": "/opt/python/anaconda3-2019-03/envs/tea/bin/python",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true
+}
