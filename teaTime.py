@@ -9,7 +9,7 @@ import smtplib
 from email.message import EmailMessage
 
 from secrets import TT_email_user, TT_email_password
-from secrets import username, password, email
+from secrets import TeeOn_username, TeeOn_password, user_email
 
 # TODO - be able to book multiple tee times
 # TODO - replace sleeps with waits from selenium
@@ -72,10 +72,10 @@ class TeaTime():
         signInBtn.click()
 
         emailIn = self.driver.find_element_by_xpath('//*[@id="Username"]')
-        emailIn.send_keys(username)
+        emailIn.send_keys(TeeOn_username)
 
         passwordIn = self.driver.find_element_by_xpath('//*[@id="Password"]')
-        passwordIn.send_keys(password)
+        passwordIn.send_keys(TeeOn_password)
 
         letsGo = self.driver.find_element_by_xpath('//*[@id="navbar"]/ul/li[6]/div/div[3]/a[2]')
         letsGo.click()
@@ -196,51 +196,6 @@ class TeaTime():
         return avail_times
 
 
-    def curateConfirmationMsg(self, day, times):
-        message = 'Successfully booked tee times on ' + day + " for "
-        for tee_time in times:
-            message += tee_time + ', '
-
-        # get rid of trailing comma and space
-        message = message[:-2]
-
-        return message
-
-
-    def curateFailureMsg(self, tee_day, tee_time, num_tees, alternatives):
-        message = 'Could not book requested tee time for:\n\tDay: ' + tee_day + '\n\tTime: ' + tee_time + '\n\tGroupings: ' + str(num_tees) + '\n\n'
-        message += 'Some alternative that are available on ' + tee_day + ' are: '
-        for time in alternatives:
-            message += time + ', '
-        message = message[:-2]
-
-        return message
-
-
-    def sendEmail(self, hetmlmsg):
-        msg = EmailMessage()
-        msg['Subject'] = 'Hacking Hiker Update'
-        msg['From']    = TT_email_user
-        msg['To']      = ", ".join(receivers)
-
-        # create plain style message if html is off
-        msg.set_content('New hikes have been posted!')
-
-        # create fancier HTML message
-        msg.add_alternative(html_msg, subtype='html')
-
-
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(TT_email_user, TT_email_password)
-            smtp.send_message(msg)
-
-        pass
-
-
-        print('\n', msg, '\n')
-        pass
-
-
     def chooseTeeTime(self, desired_time, open_times, num_times, threshold):
         good_times = pd.DataFrame(columns=['time', 'dt'])
         for time in open_times:
@@ -302,6 +257,72 @@ class TeaTime():
 
 
         pass
+
+
+    def curateConfirmationMsg(self, day, times):
+        msg = """<!DOCTYPE html><html><body>
+                   <h1 style="color:#56b000;"> It's Tea Time!</h1>"""
+        if len(times) == 1:
+            msg += "<p>Congrats, you\'ve got a new tee time booked on "
+        elif len(times) > 1:
+            msg += "<p>Congrats, you\'ve got new tee times booked on "
+
+        msg += "<b>" + str(day) + " at "
+
+        # Add tee times into message
+        for tee_time in times:
+            msg += str(tee_time) + ', '
+
+        # get rid of trailing ', '
+        msg = msg[:-2]
+
+        msg +="</b></p></body></html>"
+
+        return msg
+
+
+    def curateFailureMsg(self, tee_day, tee_time, num_tees, alternatives):
+        msg = """<!DOCTYPE html><html><body>
+                   <h1 style="color:#8a0303;"> No Tea For You!</h1>"""
+
+        msg += "<p>Looks like all the old dudes already stole all the tee times on <b>"
+        msg += str(tee_day) + "</b> around <b>"
+        for time in tee_time:
+            msg += str(time) + ', '
+        msg = msg[:-2]
+        msg += "</b>..."
+
+        if len(alternatives) > 0:
+            msg += "<p>Here's some other open tee times on " + str(tee_day) + " that you could book instead:</p>"
+
+            msg += "<ul>"
+            for time in alternatives:
+                msg += "<li>" + str(time) + "</li>"
+            msg += "<ul>"
+        else:
+            msg += "<p>Doesn't look like there any open tee times at all. Probably would've been a terrible round anyways...</p>"
+
+        msg +="</body></html>"
+
+        return msg
+
+
+    def sendEmail(self, html_msg):
+        msg = EmailMessage()
+        msg['Subject'] = 'New Tea Time!'
+        msg['From']    = TT_email_user
+        msg['To']      = user_email
+
+        # create plain style message if html is off
+        msg.set_content('New Tea Time!')
+
+        # create fancier HTML message
+        msg.add_alternative(html_msg, subtype='html')
+
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(TT_email_user, TT_email_password)
+            smtp.send_message(msg)
 
 
     def bookTeeTime(self, tee_day, tee_time, num_tees):
