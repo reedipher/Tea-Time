@@ -5,8 +5,13 @@ from datetime import datetime, timedelta
 import sys
 import pandas as pd
 
+import smtplib
+from email.message import EmailMessage
+
+from secrets import TT_email_user, TT_email_password
 from secrets import username, password, email
 
+# TODO - be able to book multiple tee times
 # TODO - replace sleeps with waits from selenium
 
 
@@ -50,15 +55,17 @@ n_weekdays = {
 
 class TeaTime():
     def __init__(self):
-        self.driver = webdriver.Chrome()
+        self.book_today = False
 
+        self.driver  = webdriver.Chrome()
         self.WEBPAGE = 'https://www.tee-on.com/'
+        self.driver.get(self.WEBPAGE)
+
+        sleep(2) # give the page time to load
 
         self.login()
 
     def login(self):
-        self.driver.get(self.WEBPAGE)
-        sleep(2) # give the page time to load
         #driver.implicitly_wait(100)
 
         signInBtn = self.driver.find_element_by_xpath('//*[@id="sign-in-menu-btn"]')
@@ -82,8 +89,12 @@ class TeaTime():
 
 
     def reformatTeeDay(self, input_day):
-        if input_day.lower() not in weekdays:
-            print('\n\tERROR: Weekday provided is invalid!\n')
+        if input_day.lower() == 'today':
+            input_day = datetime.today().strftime("%A")
+            self.book_today = True
+        else:
+            if input_day.lower() not in weekdays:
+                print('\n\tERROR: Weekday provided is invalid!\n')
 
         return weekdays[input_day.lower()]
 
@@ -128,7 +139,9 @@ class TeaTime():
 
         # If our days are the same, see if they want this week or next week
         daysToGo = 0
-        if n_today == n_teeDay:
+        if self.book_today:
+            daysToGo = 0
+        elif n_today == n_teeDay:
             # check to see if requested tee time is in the past
             if self.calculateTimeDiff(today.strftime("%H:%M"), tee_time) < 0:
                 daysToGo = 7
@@ -204,7 +217,26 @@ class TeaTime():
         return message
 
 
-    def sendEmail(self, msg):
+    def sendEmail(self, hetmlmsg):
+        msg = EmailMessage()
+        msg['Subject'] = 'Hacking Hiker Update'
+        msg['From']    = TT_email_user
+        msg['To']      = ", ".join(receivers)
+
+        # create plain style message if html is off
+        msg.set_content('New hikes have been posted!')
+
+        # create fancier HTML message
+        msg.add_alternative(html_msg, subtype='html')
+
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(TT_email_user, TT_email_password)
+            smtp.send_message(msg)
+
+        pass
+
+
         print('\n', msg, '\n')
         pass
 
