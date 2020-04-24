@@ -267,34 +267,23 @@ class TeaTime():
         elif len(times) > 1:
             msg += "<p>Congrats, you\'ve got new tee times booked on "
 
-        msg += "<b>" + str(day) + " at "
-
-        # Add tee times into message
-        for tee_time in times:
-            msg += str(tee_time) + ', '
-
-        # get rid of trailing ', '
-        msg = msg[:-2]
+        msg += "<b>" + day + " at " + ", ".join(times)
 
         msg +="</b></p></body></html>"
 
         return msg
 
 
-    def curateFailureMsg(self, tee_day, tee_time, num_tees, alternatives):
+    def curateFailureMsg(self, tee_day, tee_times, alternatives):
         msg = """<!DOCTYPE html><html><body>
                    <h1 style="color:#8a0303;"> No Tea For You!</h1>"""
 
         msg += "<p>Looks like all the old dudes already stole all the tee times on <b>"
-        msg += str(tee_day) + "</b> around <b>"
-        for time in tee_time:
-            msg += str(time) + ', '
-        msg = msg[:-2]
+        msg += tee_day + "</b> around <b>" + ", ".join(tee_times)
         msg += "</b>..."
 
         if len(alternatives) > 0:
             msg += "<p>Here's some other open tee times on " + str(tee_day) + " that you could book instead:</p>"
-
             msg += "<ul>"
             for time in alternatives:
                 msg += "<li>" + str(time) + "</li>"
